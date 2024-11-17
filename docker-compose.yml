@@ -1,0 +1,10 @@
+version: '3'
+services:
+  spleeter:
+    build: .
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output 
+      - spleeter-cache:/root/.spleeter
+volumes:
+  spleeter-cache:
