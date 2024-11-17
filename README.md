@@ -28,12 +28,22 @@ Este projeto implementa um sistema automatizado de separação de áudio usando 
    cd separar_audio
    ```
 
-2. Inicie os containers:
+2. Construa e inicie os containers:
    ```bash
-   docker-compose up -d
+   docker-compose up --build
+   ```
+   
+   Para executar em segundo plano, adicione a flag -d:
+   ```bash
+   docker-compose up -d --build
    ```
 
-3. O sistema estará pronto para uso quando você ver a mensagem "Aguardando por arquivos WAV..."
+3. Para parar e remover os containers:
+   ```bash
+   docker-compose down
+   ```
+
+4. O sistema estará pronto para uso quando você ver a mensagem "Aguardando por arquivos WAV..."
 
 ## Como Usar
 
