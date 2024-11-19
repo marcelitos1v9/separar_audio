@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 services:
   spleeter:
     build: .
@@ -8,7 +8,10 @@ services:
       - spleeter_model:/model
     environment:
       - MODEL_PATH=/model
+      - PYTHONUNBUFFERED=1
     restart: always
+    tty: true
+    stdin_open: true
 
 volumes:
   spleeter_model:

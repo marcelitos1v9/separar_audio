@@ -11,6 +11,7 @@ RUN mkdir -p /model
 
 # Definir variável de ambiente para o modelo
 ENV MODEL_PATH=/model
+ENV PYTHONUNBUFFERED=1
 
 # Pré-baixar o modelo de forma explícita
 RUN python -c "from spleeter.separator import Separator; \
@@ -27,4 +28,11 @@ RUN mkdir -p /app/input /app/output
 
 COPY . .
 
-CMD ["python", "app.py"] 
+RUN chmod -R 777 /app/input
+RUN chmod -R 777 /app/output
+
+# Adicione um script de inicialização
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"] 
