@@ -1,30 +1,30 @@
-FROM python:3.8
+FROM python:3.8-slim
 
-# Instalar FFmpeg e dependências necessárias
-RUN apt-get update && apt-get install -y ffmpeg
+# Instalar FFmpeg e dependências essenciais
+RUN apt-get update && \
+    apt-get install -y ffmpeg && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Instalar Spleeter e watchdog
-RUN pip install spleeter watchdog
+# Instalar Spleeter com suas dependências
+RUN pip install --no-cache-dir spleeter==2.3.0
 
-# Criar diretório para o modelo
-RUN mkdir -p /model
+# Criar diretórios necessários
+RUN mkdir -p /model /app/input /app/output
 
-# Definir variável de ambiente para o modelo
-ENV MODEL_PATH=/model
+# Definir variável de ambiente
+ENV MODEL_PATH=/model \
+    PYTHONUNBUFFERED=1
 
-# Pré-baixar o modelo de forma explícita
-RUN python -c "from spleeter.separator import Separator; \
-    import os; \
-    os.environ['MODEL_PATH'] = '/model'; \
-    print('Iniciando download do modelo...'); \
-    separator = Separator('spleeter:4stems-16kHz'); \
-    print('Modelo baixado com sucesso!')"
+# Pré-baixar o modelo com retry
+COPY download_model.py /
+RUN python /download_model.py
 
 WORKDIR /app
-
-# Criar diretórios para input e output
-RUN mkdir -p /app/input /app/output
-
 COPY . .
+
+# Verificar ambiente antes de iniciar
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD python -c "from spleeter.separator import Separator; Separator('spleeter:4stems-16kHz')" || exit 1
 
 CMD ["python", "app.py"] 
