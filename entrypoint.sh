@@ -14,6 +14,11 @@ check_requirements() {
         echo "Modelo não encontrado. Baixando..."
         python /download_model.py
     fi
+
+    # Ajustar permissões das pastas
+    chmod -R 777 /app/input
+    chmod -R 777 /app/output
+    chmod -R 777 /app/temp
 }
 
 # Função para tentar iniciar a aplicação
