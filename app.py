@@ -4,6 +4,7 @@ import time
 import sys
 import shutil
 import logging
+import glob
 
 # Configurar logging
 logging.basicConfig(
@@ -85,6 +86,22 @@ class AudioProcessor:
         """Processar um arquivo de áudio"""
         nome_arquivo = os.path.basename(arquivo_entrada)
         
+        # Aguardar até que o arquivo esteja completamente copiado
+        tempo_espera = 0
+        tamanho_anterior = -1
+        while tempo_espera < 30:  # Timeout de 30 segundos
+            try:
+                tamanho_atual = os.path.getsize(arquivo_entrada)
+                if tamanho_atual == tamanho_anterior and tamanho_atual > 0:
+                    break
+                tamanho_anterior = tamanho_atual
+                time.sleep(1)
+                tempo_espera += 1
+            except Exception:
+                time.sleep(1)
+                tempo_espera += 1
+                continue
+        
         # Verificar se arquivo já teve muitos erros
         if self.erros_arquivos.get(arquivo_entrada, 0) >= 3:
             logger.error(f"Arquivo {nome_arquivo} ignorado após múltiplas falhas")
@@ -126,28 +143,31 @@ class AudioProcessor:
         
         while True:
             try:
-                arquivos = [f for f in os.listdir('/app/input') 
-                          if f.lower().endswith('.wav')]
+                # Usar glob para encontrar arquivos WAV de forma mais confiável
+                arquivos = glob.glob('/app/input/**/*.wav', recursive=True)
                 
-                for arquivo in arquivos:
-                    caminho_completo = os.path.join('/app/input', arquivo)
-                    
-                    if caminho_completo not in self.arquivos_processados:
-                        logger.info(f"Novo arquivo detectado: {arquivo}")
-                        self.processar_audio(caminho_completo)
-                        self.arquivos_processados.add(caminho_completo)
+                for caminho_completo in arquivos:
+                    try:
+                        if caminho_completo not in self.arquivos_processados:
+                            logger.info(f"Novo arquivo detectado: {os.path.basename(caminho_completo)}")
+                            self.processar_audio(caminho_completo)
+                            self.arquivos_processados.add(caminho_completo)
+                    except Exception as e:
+                        logger.error(f"Erro ao processar arquivo {caminho_completo}: {str(e)}")
+                        continue
                 
-                # Limpar registros de arquivos processados
-                self.arquivos_processados = {f for f in self.arquivos_processados 
-                                          if os.path.exists(f)}
-                self.erros_arquivos = {k:v for k,v in self.erros_arquivos.items() 
-                                     if os.path.exists(k)}
+                # Limpar registros antigos a cada 100 iterações
+                if len(self.arquivos_processados) > 1000:
+                    self.arquivos_processados = {f for f in self.arquivos_processados 
+                                              if os.path.exists(f)}
+                    self.erros_arquivos = {k:v for k,v in self.erros_arquivos.items() 
+                                         if os.path.exists(k)}
                 
-                time.sleep(1)
+                time.sleep(2)  # Aumentar intervalo para reduzir uso de CPU
                 
             except Exception as e:
                 logger.error(f"Erro no monitoramento: {str(e)}")
-                time.sleep(5)  # Esperar mais tempo em caso de erro
+                time.sleep(5)
 
 if __name__ == "__main__":
     try:
